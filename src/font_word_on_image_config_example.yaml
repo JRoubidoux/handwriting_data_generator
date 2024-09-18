@@ -9,6 +9,32 @@ size_images_differently:
   vertical_proportional_bounds: 2
   horizontal_proportional_bounds: 2
 
+image_padding:
+  pad_left: 3
+  pad_top: 3
+  pad_right: 3
+  pad_bottom: 3
+
+image_sizing:
+  static:
+    bool: False
+    pad_left: 1.05
+    pad_top: 2.0
+    pad_right: 2.0
+    pad_bottom: 1.05
+  uniform:
+    bool: True
+    vertical_resize_multiplier: 2
+    horizontal_resize_multiplier: 3
+  gaussian:
+    bool: False 
+    mean: 0.5
+    standard_deviation: 0.16
+    clip_values_at_number_of_std_deviations: 3 
+  pareto:
+    bool: False 
+    alpha: 2.5
+
 font_size:
   static:
     bool: False
@@ -27,9 +53,7 @@ font_size:
     within_and_across_images: True
     across_images_only: False
   
-  
 crop_top_and_bottom_of_words_ratio: .02
-
 
 background_color: 
   uniform:
@@ -44,7 +68,6 @@ background_color:
   static:
     bool: False
     value: 120
-  
 
 font_color:
   within_and_across_images: True
@@ -63,13 +86,10 @@ font_color:
     bool: False
     value: 120
 
-
-
 draw_underlines:
   draw_full_underline_frequency: 0.25
   draw_dotted_underlines_frequency: 0.5
   draw_no_underline_frequency: 0.25
-
 
 image_maker_parameters:
   image_width_multiplier: 1.4

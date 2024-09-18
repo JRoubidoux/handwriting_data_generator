@@ -121,7 +121,7 @@ def save_tensor_as_image(tensor, path):
 if __name__ == '__main__':
     # vocabulary = ['farmer', 'The cheeky \nFarmer', 'yeet', 'poot \nput \npooterut \npoom']
 
-    path_to_vocab = '/grphome/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/vocabularies_of_interest/vocabularies.json'
+    path_to_vocab = '/grphome/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/vocabularies_of_interest/vocabularies.json' # r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\RLL_handwriting_data_generator\vocabularies_of_interest\vocabularies.json" #
     fields = ['occupation']
 
     vocabulary = []
@@ -138,17 +138,17 @@ if __name__ == '__main__':
     # '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/fonts/hannahfont-font/Hannahfont-xqmj.ttf': .33,
     '''
 
-    root_directory_for_fonts = '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/fonts'
+    root_directory_for_fonts = '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/fonts' # r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\RLL_handwriting_data_generator\fonts" #
 
     font_helper = fontHelper(root_directory_for_fonts)
 
     json_dict = font_helper.get_font_and_weight_dictionary_equal_weights()
 
-    config_file_path = '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/src/font_word_on_image_config_example.yaml'
+    config_file_path = '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/src/font_word_on_image_config_example.yaml' # r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\RLL_handwriting_data_generator\src\font_word_on_image_config_example.yaml" #
 
-    output_directory = '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/sandbox/test_image_generation'
+    output_directory = '/home/jroubido/fsl_groups/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/sandbox/test_image_generation' # r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\sandbox\fonts_mark_1" #
 
-    transforms = [v2.PILToTensor(), scale255To0And1(), v2.Resize(size=(64, 256), antialias=True), v2.ColorJitter(brightness=(.9, 1.1),  contrast=(1, 1)), lighten_or_darken_image(), v2.ElasticTransform(alpha=50.0, sigma=10.0), v2.RandomPerspective(distortion_scale=0.2, p=0.5), v2.GaussianNoise(mean=0, sigma=0.025, clip=True), v2.Grayscale(3)]
+    transforms = [v2.PILToTensor(), scale255To0And1(), v2.Resize(size=(64, 256), antialias=True)] #, v2.ColorJitter(brightness=(.9, 1.1),  contrast=(1, 1)), lighten_or_darken_image(), v2.ElasticTransform(alpha=50.0, sigma=10.0), v2.RandomPerspective(distortion_scale=0.2, p=0.5), v2.GaussianNoise(mean=0, sigma=0.025, clip=True), v2.Grayscale(3)]
 
     print("before data queue", flush=True)
 
