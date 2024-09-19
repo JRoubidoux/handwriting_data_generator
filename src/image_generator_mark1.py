@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 import numpy as np
 import os
+from fontTools.ttLib import TTFont
 
 class fontHelper():
     def __init__(self, root_directory: str):
@@ -14,9 +15,11 @@ class fontHelper():
                                                  'brock-script-font',
                                                  'discipuli-britannica-font',
                                                  'daniela-font',
+                                                 'Dawning_of_a_New_Day',
                                                  'feasibly-single-line-font',
                                                  'hoarsely-single-line-font',
                                                  'homemade-apple-font',
+                                                 'kingthings-wrote',
                                                  'may-queen-font',
                                                  'mrs-saint-delafield-font',
                                                  'otto-font',
@@ -31,7 +34,8 @@ class fontHelper():
                                                  'precious-font',
                                                  'internal-font',
                                                  'monsieur-la-doulaise-font',
-                                                 'same-sex-marriage-script-ldo-font'])
+                                                 'same-sex-marriage-script-ldo-font',
+                                                 'Yesteryear'])
 
     def get_font_files(self, root_directory: str):
         list_of_font_file_paths = []
@@ -72,6 +76,7 @@ class fontWordOnImage():
         self.set_background_colors()
         self.set_font_colors()
         self.font_objects = self.get_font_objects()
+        self.set_fonts_for_words()
         self.set_underline_drawing()
         
     def get_font_paths_and_indicies(self, fonts_and_weights: dict):
@@ -91,7 +96,7 @@ class fontWordOnImage():
             for _ in range(number_of_times_to_add_the_index):
                 list_of_font_indicies.append(index)
 
-        if sum_of_weights > 1.0 or sum_of_weights < .99:
+        if sum_of_weights > 1.01 or sum_of_weights < .99:
             print("The sum of the weights is greater or less than 1, this should not be the case.")
             exit()
 
@@ -105,6 +110,38 @@ class fontWordOnImage():
                 dict_of_font_size_to_ImageFont[font_size] = ImageFont.truetype(font_path, font_size)
             list_of_font_objects.append(dict_of_font_size_to_ImageFont)
         return list_of_font_objects
+    
+    def set_fonts_for_words(self):
+        fonts = [TTFont(font_path) for font_path in self.font_paths]
+
+        char_dict = {}
+        self.fonts_for_text_labels = {}
+
+        for text in self.vocabulary:
+            if text == 'blank':
+                self.fonts_for_text_labels[text] = [i for i in range(len(self.font_paths))]
+            else:
+                for character in text:
+                    if character not in char_dict:
+                        char_dict[character] = set()
+                        for index, font in enumerate(fonts):
+                            cmap = font.get('cmap')
+
+                            if not cmap:
+                                print("No cmap table found in the font.")
+
+                            else:
+                                char_code = ord(character)
+
+                                for table in cmap.tables:
+                                    platform_id = table.platformID
+                                    encoding_id = table.platEncID
+                                    
+                                    if platform_id == 3 and encoding_id == 1:
+                                        if char_code in table.cmap:
+                                            char_dict[character].add(index)
+                                            break
+                self.fonts_for_text_labels[text] = list(set.intersection(*[char_dict[character] for character in text]))
 
     def set_variables_for_font_size(self):
         config_key = 'font_size'
@@ -168,9 +205,15 @@ class fontWordOnImage():
         
         self.list_of_draw_underline_options = list_of_underline_options
 
-    def get_font(self, font_size: int):
-        font_index = self.list_of_font_indicies[random.randint(0, self.length_of_font_index_list_minus_1)]
+    def get_font(self, font_index: int, font_size: int):
         return self.font_objects[font_index][font_size]
+
+    def get_font_index(self, text: str):
+        if text == 'blank':
+            return self.list_of_font_indicies[random.randint(0, self.length_of_font_index_list_minus_1)]
+        else:
+            index = random.choice(self.fonts_for_text_labels[text])
+            return index
 
     def get_font_size(self):
         config_key = 'font_size'
@@ -215,19 +258,19 @@ class fontWordOnImage():
         draw_underline_selection = random.choice(self.list_of_draw_underline_options)
 
         if draw_underline_selection == "draw_no_underline_frequency":
-            return image
+            return image, None
         else:
             y_start_value_to_draw_line = 0
             line_thickness = font_size // 10
 
             image_as_array = np.array(image)
 
-            if text == 'blank':
+            if text == 'blank' or text == '-':
                 image_height = image.size[1]
                 lower_bound = round(image_height*(0.66))
 
                 if (image_height - line_thickness) < lower_bound:
-                    return image
+                    return image, None
                 else:
                     y_start_value_to_draw_line = random.randint(lower_bound, (image_height-line_thickness))
 
@@ -258,10 +301,11 @@ class fontWordOnImage():
                         break
 
             if draw_underline_selection == "draw_full_underline_frequency":
+                line_color = np.random.randint(0, 20)
 
-                image_as_array[y_start_value_to_draw_line:(y_start_value_to_draw_line+line_thickness)][:][:] = np.random.randint(0, 2)
+                image_as_array[y_start_value_to_draw_line:(y_start_value_to_draw_line+line_thickness)][:][:] = line_color
                 image_with_line = Image.fromarray(image_as_array)
-                return image_with_line
+                return image_with_line, y_start_value_to_draw_line
 
             elif draw_underline_selection == "draw_dotted_underlines_frequency":
                 line_color = np.random.randint(0, 20)
@@ -272,7 +316,7 @@ class fontWordOnImage():
                     if skip_number % 2 == 0:
                         image_as_array[y_start_value_to_draw_line:(y_start_value_to_draw_line+line_thickness), i:i+increaser, :] = line_color
                 image_with_line = Image.fromarray(image_as_array)
-                return image_with_line
+                return image_with_line, y_start_value_to_draw_line
             else:
                 print("Check that your config file matches the strings listed here.")
                 exit()
@@ -302,18 +346,60 @@ class fontWordOnImage():
 
         return new_image, add_to_top, add_to_bottom, add_to_left, add_to_right
 
+    def draw_dash(self, image, font_color: int, font_size: int, underline_index):
+        image_as_array = np.array(image)
+
+        height, width = image_as_array.shape[:2]
+
+        start_index_of_underline = -float('inf')
+        if underline_index:
+            start_index_of_underline = underline_index
+
+        dash_thickness = (font_size // 10) + random.randint(-2, 2)
+
+        width_left_range = [round(0.1*width), round(0.35*width)]
+        width_right_range = [round(0.65*width), round(0.9*width)]
+
+        if start_index_of_underline > -float('inf'):
+            dash_height_top_range = [round(0.25*start_index_of_underline), round(0.45*start_index_of_underline)]
+            dash_height_bottom_range = [round(0.60*start_index_of_underline), round(0.85*start_index_of_underline)]
+        else:
+            dash_height_top_range = [round(0.15*height), round(0.35*height)]
+            dash_height_bottom_range = [round(0.65*height), round(0.95*height)]
+
+        start_pos_x = random.randint(width_left_range[0], width_left_range[1])
+        end_pos_x = random.randint(width_right_range[0], width_right_range[1])
+
+        choice = random.randint(0, 1)
+
+        if choice == 0:
+            start_pos_y = random.randint(dash_height_top_range[0], dash_height_top_range[1])
+            end_pos_y = random.randint(dash_height_bottom_range[0], dash_height_bottom_range[1])
+        else:
+            end_pos_y = random.randint(dash_height_top_range[0], dash_height_top_range[1])
+            start_pos_y = random.randint(dash_height_bottom_range[0], dash_height_bottom_range[1])
+
+        slope = (end_pos_y - start_pos_y) / (end_pos_x - start_pos_x)
+        intercept = round(start_pos_y - (slope*start_pos_x))
+
+        for i in range(start_pos_x, end_pos_x):
+            bottom_of_line = round(intercept + slope*i)
+            image_as_array[(bottom_of_line-dash_thickness):bottom_of_line, i:i+1, :] = font_color
+
+        return Image.fromarray(image_as_array)
+
     def render_word_on_image_and_text_label(self, image_width_multiplier: float, image_height_multiplier: float, start_text_x_fraction_of_width: float, start_text_y_fraction_of_height: float):
         # Assume that the words in the given image will all be the same size and all have the same color. Also that they all have the same font. Font can change from image to image. 
         text = random.choice(self.vocabulary)
 
-        if text == 'blank':
+        if text == 'blank' or text == '-':
             text_to_write = ''.join([' ' for _ in range(random.randint(4, 20))])
         else:
             text_to_write = text
         
         font_size = self.get_font_size()
-        font_object = self.get_font(font_size)
-        # print(font_object.path)
+        font_index = self.get_font_index(text)
+        font_object = self.get_font(font_index, font_size)
 
         background_color = self.get_background_color()
 
@@ -324,9 +410,8 @@ class fontWordOnImage():
 
         text_width = (text_bbox[2] - text_bbox[0])*((len(text_to_write)+1)/(len(text_to_write)))
 
-        if text == 'blank':
-            num_spaces = len(text_to_write)
-            text_height = int((random.randint(1, (num_spaces-round(num_spaces*(2/3))))/num_spaces)*text_width)
+        if text == 'blank' or text == '-':
+            text_height = random.randint(10, 20)*(font_size//10)
         else:
             text_height = (text_bbox[3] - text_bbox[1])
 
@@ -342,9 +427,11 @@ class fontWordOnImage():
 
         image = self.draw_text_on_image(image, text_start_x, text_start_y, text_to_write, font_object, font_color, background_color)
 
-        image = self.draw_underline(image, text, font_size)
+        image, underline_index = self.draw_underline(image, text, font_size)
 
         if text == 'blank':
             return image, ''
+        elif text == '-':
+            return self.draw_dash(image, font_color, font_size, underline_index), text
         else:
             return image, text

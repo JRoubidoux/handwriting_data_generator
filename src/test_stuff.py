@@ -43,7 +43,12 @@ class syntheticGeneratorDataset(Dataset):
 
     def __getitem__(self, index):
         image, text_label = self.image_maker.render_word_on_image_and_text_label(self.image_width_multiplier, self.image_height_multiplier, self.start_text_x_fraction_of_width, self.start_text_y_fraction_of_height)
-
+        if image.size == (0, 0):
+            print('here')
+        if image.height == 0:
+            print('here')
+        if image.width == 0:
+            print('here')
         if self.transforms is not None:
             tensor = self.transforms(image)
         
@@ -122,7 +127,7 @@ if __name__ == '__main__':
     # vocabulary = ['farmer', 'The cheeky \nFarmer', 'yeet', 'poot \nput \npooterut \npoom']
 
     path_to_vocab = '/grphome/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/init/RLL_handwriting_data_generator/vocabularies_of_interest/vocabularies.json' # r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\RLL_handwriting_data_generator\vocabularies_of_interest\vocabularies.json" #
-    fields = ['occupation']
+    fields = ['education_iowa_1915']
 
     vocabulary = []
 
@@ -167,19 +172,19 @@ if __name__ == '__main__':
 
     dataset = syntheticGeneratorDataset2(transforms, 100, data_queue)'''
 
-    dataloader = DataLoader(dataset, batch_size=10, num_workers=8)
+    dataloader = DataLoader(dataset, batch_size=1)
     to_PIL = v2.ToPILImage()
 
     start_time = time.time()
     for i, (tensors, text_labels) in enumerate(dataloader):
         images = [to_PIL(tensor) for tensor in tensors]
-        print(i)
+        print(i, flush=True)
         for j, (tensor, text_label) in enumerate(zip(tensors, text_labels)):
-            print(text_label)
+            # print(text_label, flush=True)
             tensor = torch.squeeze(tensor, dim=0)
             new_image_name = f"{i}.png"
             new_image_path = os.path.join(output_directory, new_image_name)
-            #save_tensor_as_image(tensor, new_image_path)
+            save_tensor_as_image(tensor, new_image_path)
         if i == 50:
             break
     print("Number of seconds: ", time.time() - start_time)
