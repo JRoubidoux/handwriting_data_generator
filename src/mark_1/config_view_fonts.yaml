@@ -1,0 +1,75 @@
+fonts:
+  different_fonts_per_word: False
+
+size_images_differently:
+  bool: False
+  vertical_proportional_bounds: 2
+  horizontal_proportional_bounds: 2
+
+font_size:
+  static:
+    bool: True
+    value: 40
+  uniform: 
+    bool: False
+    lower_bound: None
+    upper_bound: None
+    within_and_across_images: True
+    across_images_only: False
+  gaussian: 
+    bool: False
+    mean: 50
+    standard_deviation: 2
+    clip_values_at_number_of_std_deviations: 1
+    within_and_across_images: True
+    across_images_only: False
+  
+  
+crop_top_and_bottom_of_words_ratio: .02
+
+
+background_color: 
+  uniform:
+    bool: False
+    lower_bound: 225
+    upper_bound: 255
+  gaussian:
+    bool: False
+    mean: 200
+    standard_deviation: 25
+    clip_values_at_number_of_std_deviations: 2
+  static:
+    bool: True
+    value: 120
+  
+
+font_color:
+  within_and_across_images: False
+  across_images_only: False
+  same_for_all_images: True
+  uniform: 
+    bool: False
+    lower_bound: None
+    upper_bound: None
+  gaussian: 
+    bool: False
+    mean: 20
+    standard_deviation: 10
+    clip_values_at_number_of_std_deviations: 1
+  static:
+    bool: True
+    value: 120
+
+
+
+draw_underlines:
+  draw_full_underline_frequency: 0.0
+  draw_dotted_underlines_frequency: 0.0
+  draw_no_underline_frequency: 1.0
+
+
+image_maker_parameters:
+  image_width_multiplier: 1.4
+  image_height_multiplier: 1.7
+  start_text_x_fraction_of_width: 0.1
+  start_text_y_fraction_of_height: 0.1
