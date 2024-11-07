@@ -19,3 +19,5 @@ Mark2:
         │    ├── Glyph ID 3 -> Outline (quadratic Bézier curves for 'A')
         │    └── Glyph ID 4 -> Outline (quadratic Bézier curves for 'a')
         └── head, hhea, maxp, name, OS/2, post, and other tables
+
+    Fill this out for completion of mark_2
