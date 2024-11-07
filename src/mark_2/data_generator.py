@@ -7,16 +7,13 @@ import yaml
 import albumentations as A
 
 # Current:
-# TODO: Check to see how blank images and dashes are handled. Implement this logic.
-# TODO: Create a custom class that can generate dashes in a variety of ways.  
-# TODO: make sure that the draw word on image object yields the lexicon.
-# TODO: make sure that the array assignment for underline color in the draw_underline function in the draw word on image class is working.
 
 # Future:
 # TODO: Class that draws underlines on images in a deterministic manner, for image that have multiple lines of text. Underline shouldn't always have a slope of zero.
 # TODO: Fix the way that height, width and start coordinates for characters for a given font and font size are determined. 
 # TODO: Rather than dynamically compute all the letter sizes from the get go, do this for each word rendered during runtime. Cut the up front time.
 # TODO: Rather than compute the length of a word each time it is to be rendered even if it's been rendered before, store this information dynamically, unless the vocab is very large. Define what this means. 
+# TODO: make sure that the array assignment for underline color in the draw_underline function in the draw word on image class is working.
 
 class vocabManager():
     """
@@ -155,7 +152,7 @@ class fontObjectManagerGivenVocabulary(fontObjectManager):
         fonts_for_text_labels = {} # A dictionary to map a given text label to a list of font to sample from when generating text.
         char_dict = {} # A dictionary to keep track of which fonts can be used for what character. 
         for text in vocabulary: # Iterate through the vocabulary to find what fonts will be appropriate for the text. 
-            if text == 'blank': # This will render no text on the image so any font will work for this. 
+            if text == "" or text == "dash_in_image_field": # This will render no text on the image so any font will work for this. 
                 if text not in fonts_for_text_labels: # If blank hasn't been added to our dictionary, then add it. 
                     fonts_for_text_labels[text] = []
                     for index in TTFonts_and_font_dicts.keys():
@@ -235,7 +232,10 @@ class fontObjectManagerGivenVocabulary(fontObjectManager):
     def get_font_based_on_words(self, texts: list[str], font_size: int):
         list_of_sets = []
         for text in texts:
-            reduced_text = self.get_reduced_text(text)
+            if text != "dash_in_image_field":
+                reduced_text = self.get_reduced_text(text)
+            else:
+                reduced_text = text
             list_of_font_dict_indicies = self.fonts_for_text_labels[reduced_text]
             list_of_sets.append(set(list_of_font_dict_indicies))
         intersection = list(set.intersection(*list_of_sets))
@@ -439,19 +439,22 @@ class fontLetterPlotDictionaryInstantiator():
                 font_letter_plot_dictionary[font_object.path][font_size]["c"]['width'] = width_of_letter
                 font_letter_plot_dictionary[font_object.path][font_size]["c"]['height'] = height_of_letter
                 for word in vocabulary:
-                    for text in word:
-                        if text not in font_letter_plot_dictionary[font_object.path][font_size]:
-                            font_letter_plot_dictionary[font_object.path][font_size][text] = {}
-                            if text == " ":
-                                new_coordinates, width_of_letter, height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, "c")
-                                font_letter_plot_dictionary[font_object.path][font_size][text]['start_coordinates'] = new_coordinates
-                                font_letter_plot_dictionary[font_object.path][font_size][text]['width'] = width_of_letter
-                                font_letter_plot_dictionary[font_object.path][font_size][text]['height'] = height_of_letter
-                            else:
-                                new_coordinates, width_of_letter, height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, text)
-                                font_letter_plot_dictionary[font_object.path][font_size][text]['start_coordinates'] = new_coordinates
-                                font_letter_plot_dictionary[font_object.path][font_size][text]['width'] = width_of_letter
-                                font_letter_plot_dictionary[font_object.path][font_size][text]['height'] = height_of_letter                
+                    if word == "dash_in_image_field":
+                        continue
+                    else:
+                        for text in word:
+                            if text not in font_letter_plot_dictionary[font_object.path][font_size]:
+                                font_letter_plot_dictionary[font_object.path][font_size][text] = {}
+                                if text == " ":
+                                    new_coordinates, width_of_letter, height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, "c")
+                                    font_letter_plot_dictionary[font_object.path][font_size][text]['start_coordinates'] = new_coordinates
+                                    font_letter_plot_dictionary[font_object.path][font_size][text]['width'] = width_of_letter
+                                    font_letter_plot_dictionary[font_object.path][font_size][text]['height'] = height_of_letter
+                                else:
+                                    new_coordinates, width_of_letter, height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, text)
+                                    font_letter_plot_dictionary[font_object.path][font_size][text]['start_coordinates'] = new_coordinates
+                                    font_letter_plot_dictionary[font_object.path][font_size][text]['width'] = width_of_letter
+                                    font_letter_plot_dictionary[font_object.path][font_size][text]['height'] = height_of_letter                
         return font_letter_plot_dictionary
     
     def get_letter_coordinates_width_and_height(font_object, text):
@@ -481,6 +484,70 @@ class fontLetterPlotDictionaryInstantiator():
         height_of_letter = true_y_pos_end - true_y_pos_start + 1
         return new_coordinates, width_of_letter, height_of_letter
 
+class drawDashesWithBezier():
+    def __init__(self, height_range: tuple, width_range: tuple, x0_range: tuple, x1_range: tuple, x2_range: tuple, x3_range: tuple, y0_range: tuple, y1_range: tuple, y2_range: tuple, y3_range: tuple):
+        self.height_range = height_range
+        self.width_range = width_range
+        self.x0_range = x0_range
+        self.x1_range = x1_range
+        self.x2_range = x2_range
+        self.x3_range = x3_range
+        self.y0_range = y0_range
+        self.y1_range = y1_range
+        self.y2_range = y2_range
+        self.y3_range = y3_range
+
+    def get_height_and_width(self):
+        height = np.random.randint(self.height_range[0], self.height_range[1]+1)
+        width = np.random.randint(self.width_range[0], self.width_range[1]+1)
+        return height, width
+
+    def get_coordinate_points(self, height: int, width: int):
+        x0 = round(width*np.random.uniform(self.x0_range[0], self.x0_range[1]))
+        x1 = round(width*np.random.uniform(self.x1_range[0], self.x1_range[1]))
+        x2 = round(width*np.random.uniform(self.x2_range[0], self.x2_range[1]))
+        x3 = round(width*np.random.uniform(self.x3_range[0], self.x3_range[1]))
+        y0 = round(height*np.random.uniform(self.y0_range[0], self.y0_range[1]))
+        y1 = round(height*np.random.uniform(self.y1_range[0], self.y1_range[1]))
+        y2 = round(height*np.random.uniform(self.y2_range[0], self.y2_range[1]))
+        y3 = round(height*np.random.uniform(self.y3_range[0], self.y3_range[1]))
+        return x0, x1, x2, x3, y0, y1, y2, y3
+
+    def get_dash_bezier_curve(self, x0: int, x1: int, x2: int, x3: int, y0: int, y1: int, y2: int, y3: int):
+        return cubicBezierCurve(x0, x1, x2, x3, y0, y1, y2, y3)
+
+    def get_dash_on_image(self, font_color: int, background_color: int):
+        height, width = self.get_height_and_width()
+        x0, x1, x2, x3, y0, y1, y2, y3 = self.get_coordinate_points(height, width)
+        cubic_bezier_curve = self.get_dash_bezier_curve(x0, x1, x2, x3, y0, y1, y2, y3)
+        x_y_pairs = [cubic_bezier_curve.get_point_value_at_t(t) for t in np.linspace(0, 1, 1000)]
+
+        image = np.full(shape=(height, width, 3), fill_value=background_color)
+
+        line_thickness = height / np.random.uniform(13, 18)
+        line_thickness_above = round(line_thickness/2)
+        line_thickness_below = line_thickness_above + 1
+
+        for (x, y) in x_y_pairs:
+            image[(y-line_thickness_above):(y+line_thickness_below), x:x+1, :] = font_color
+
+        return image
+        
+class cubicBezierCurve():
+    def __init__(self, x0: int, x1: int, x2: int, x3: int, y0: int, y1: int, y2: int, y3: int):
+        self.x0 = x0
+        self.x1 = x1
+        self.x2 = x2
+        self.x3 = x3
+        self.y0 = y0
+        self.y1 = y1
+        self.y2 = y2
+        self.y3 = y3
+
+    def get_point_value_at_t(self, t):
+        x = (1 - t)**3 * self.x0 + 3 * (1 - t)**2 * t * self.x1 + 3 * (1 - t) * t**2 * self.x2 + t**3 * self.x3
+        y = (1 - t)**3 * self.y0 + 3 * (1 - t)**2 * t * self.y1 + 3 * (1 - t) * t**2 * self.y2 + t**3 * self.y3
+        return round(x), round(y)
 
 class drawWordOnImageInstantiator():
     """
@@ -494,25 +561,26 @@ class drawWordOnImageInstantiator():
             return None
 
     @staticmethod
-    def get_draw_on_image_object(font_letter_plot_dictionary: dict, image_padder: padImage = None):
-        return drawWordOnImage(font_letter_plot_dictionary, image_padder)
+    def get_draw_on_image_object(font_letter_plot_dictionary: dict, draw_dashes_with_bezier: drawDashesWithBezier, image_padder: padImage = None):
+        return drawWordOnImage(font_letter_plot_dictionary, draw_dashes_with_bezier, image_padder)
 
 
 class drawWordOnImage():
     """
     This class generates a synthetic image and draws text on it.
     """
-    def __init__(self, font_letter_plot_dictionary: dict, image_padder: padImage):
+    def __init__(self, font_letter_plot_dictionary: dict, draw_dashes_with_bezier: drawDashesWithBezier, image_padder: padImage):
         self.font_letter_plot_dictionary = font_letter_plot_dictionary
         self.image_padder = image_padder
+        self.draw_dashes_with_bezier = draw_dashes_with_bezier
 
     def get_word_data(self, text, font_object_path, font_size):
         """
         Given a word (text), a font_object_path and a font_size, return the estimated height and width of the word on our image
         and the start coordinates for where the image should be drawn. 
         """
-        if text == " ":
-            return 1, 1, 0, 0
+        if text == "":
+            return font_size, font_size, 0, 0
         else:
             width_of_image = 0
             largest_height = 0
@@ -563,7 +631,7 @@ class drawWordOnImage():
         """
         Given a word, a font object, image background color, font color, image dimensions and text start coordinates, a synthetic image is created. 
         """
-        if text == " ":
+        if text == "":
             return np.array(Image.new('RGB', (width_of_image, height_of_image), color=(background_color, background_color, background_color)))
         else:
             image = Image.new('RGB', (width_of_image, height_of_image), color=(background_color, background_color, background_color))
@@ -597,9 +665,13 @@ class drawWordOnImage():
         """
         This is the main function for this class. It returns a synthetically generated image. 
         """
-        width_of_image, height_of_image, x_coord_start, y_coord_start = self.get_word_data(text, font_object.path, font_size)
-        image = np.array(self.create_image(text, font_object, background_color, font_color, width_of_image, height_of_image, x_coord_start, y_coord_start))
-        underline_start_pos = self.get_underline_start_pos(font_object, font_size, y_coord_start)
+        if text == "dash_in_image_field":
+            image = self.draw_dashes_with_bezier.get_dash_on_image(font_color, background_color)
+            underline_start_pos = round(image.shape[0]*.9)
+        else:
+            width_of_image, height_of_image, x_coord_start, y_coord_start = self.get_word_data(text, font_object.path, font_size)
+            image = np.array(self.create_image(text, font_object, background_color, font_color, width_of_image, height_of_image, x_coord_start, y_coord_start))
+            underline_start_pos = self.get_underline_start_pos(font_object, font_size, y_coord_start)
         if get_underline:
             image = self.draw_underline(image, font_size, underline_color, underline_start_pos)
         if self.image_padder:
@@ -814,7 +886,7 @@ class mergeWordImageOnBaseImage(window):
         This is main function of the mergeWordImageOnBaseImage. It chooses a place on the window based on the bounds for each position: left, right, top and bottom,
             then resizes the word image to that given space, then it merges the word image with the base image and returns the base image
         """
-        x_start = np.random.randint(self.x_start_lower_bound, self.x_start_upper_bound)
+        x_start = np.random.randint(self.x_start_lower_bound, self.x_start_upper_bound) # Determine the bounds on the base image within which we'll merge our word image.
         x_end = np.random.randint(self.x_end_lower_bound, self.x_end_upper_bound)
         y_start = np.random.randint(self.y_start_lower_bound, self.y_start_upper_bound)
         y_end = np.random.randint(self.y_end_lower_bound, self.y_end_upper_bound)
@@ -826,15 +898,17 @@ class mergeWordImageOnBaseImage(window):
 
         if window_width < new_width:
             new_width = window_width
-        resize = A.Resize(height=new_height, width=new_width)
+
+        resize = A.Resize(height=new_height, width=new_width) # Resize our word image to the size of the window for merging onto the base image. 
         word_image_as_array_resized = resize(image=word_image_as_array)["image"]
 
         merge_x_start = x_start
-        if new_width < window_width:
+        if new_width < window_width: # If the new width of our word image is smaller than the width of the window on the base image we're to merge on, let the x-position vary from the start of the window so that there is variation in word placement. 
             difference = window_width-new_width
             difference_scaled = int(difference/20)
             merge_x_start = x_start + np.clip(int(np.random.chisquare(3)*difference_scaled), 0, difference)
 
+        # For every pixel value in the word image that is smaller (darker) then the corresponding pixel value in the window of the base image, set the corresponding pixel value in the base image to that smaller pixel value. 
         for i, y in enumerate(range(y_start, min((y_start+new_height), base_image.shape[0]))):
             for j, x in enumerate(range(merge_x_start, (merge_x_start+new_width))):
                 for k in range(3):
@@ -874,12 +948,18 @@ class cropMergedImageToViewSizeInstantiator():
 
 class cropMergedImageToViewSize(window):
     """
-    This class crops the merged image down to the view size for our given model. 
+    This class crops the merged image down to a random size (bounds for size determined by user) to add variation to our images. 
     """
     def __init__(self, x_start_lower_bound: int, x_start_upper_bound: int, x_end_lower_bound: int, x_end_upper_bound: int, y_start_lower_bound: int, y_start_upper_bound: int, y_end_lower_bound: int, y_end_upper_bound: int):
         super().__init__(x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound)
 
     def crop_image(self, image: np.array):
+        """
+        This is the main function of this class that crops the merged image down to the bounds selected below. 
+
+        Args:
+            image: an np.array of our image.
+        """
         x_start = np.random.randint(self.x_start_lower_bound, self.x_start_upper_bound)
         x_end = np.random.randint(self.x_end_lower_bound, self.x_end_upper_bound)
         y_start = np.random.randint(self.y_start_lower_bound, self.y_start_upper_bound)
@@ -973,13 +1053,17 @@ class mergeWordImagesOnBaseImage():
         self.all_vocabulary = self.get_all_vocab()
         self.font_object_manager_given_vocab = self.get_font_object_manager_given_vocabulary(config)
         self.font_letter_plot_dictionary = fontLetterPlotDictionaryInstantiator.get_font_letter_plot_dictionary(self.font_object_manager_given_vocab, self.all_vocabulary)
-        self.draw_word_on_image_object = self.get_draw_word_on_image_object()
+        self.fields_to_draw_dashes = self.get_field_to_draw_dashes_with_bezier(config)
+        self.field_to_draw_word_on_image_object = self.get_draw_word_on_image_objects()
         self.base_image, new_x_min, new_y_min = self.get_image_base_and_image_base_start_coordinates(config)
         self.update_window_bounds(new_x_min, new_y_min)
         self.format_string = self.get_format_string(config)
         self.fields_to_input_into_format_string = self.get_fields_to_input_into_format_string(config)
 
     def get_cropped_merged_image_to_view_size_object(self, config: dict):
+        """
+        This function gets a cropMergedImageToViewSizeInstantiator object.
+        """
         if config["partial_base_image"]["bool"]:
             view_window_path = config["partial_base_image"]["view_window_path"]
             x_start_left_range_percentage = config["partial_base_image"]["x_start_left_range_percentage"]
@@ -995,12 +1079,18 @@ class mergeWordImagesOnBaseImage():
             return None
         
     def get_fields(self, config: dict):
+        """
+        This function gets the fields that we want to paste on our base image.
+        """
         fields = []
         for field in config["fields"]:
             fields.append(field)
         return fields
     
     def get_field_to_vocab_manager(self, config: dict):
+        """
+        This function yields a vocabManager object for each field we are interested in representing synthetically.
+        """
         field_to_vocab_manager = {}
         for field in self.fields:
             vocab_manager = vocabManager(config["fields"][field]["path_to_vocabulary"])
@@ -1008,31 +1098,74 @@ class mergeWordImagesOnBaseImage():
         return field_to_vocab_manager
     
     def get_field_to_merge_word_image_on_base_image(self, config):
+        """
+        This function yields a mergeWordImageOnBaseImage object for each field we are interested in representing synthetically. 
+        """
         field_to_merge_word_image_on_base_image = {}
         for field in self.fields:
             merge_word_image_on_base_image = mergeWordImageOnBaseImageInstantiator.get_merge_word_image_on_base_image_object(config["fields"][field])
             field_to_merge_word_image_on_base_image[field] = merge_word_image_on_base_image
         return field_to_merge_word_image_on_base_image
 
-    def get_draw_word_on_image_object(self):
-        draw_word_on_image_object = drawWordOnImageInstantiator.get_draw_on_image_object(self.font_letter_plot_dictionary, None)
-        return draw_word_on_image_object
+    def get_field_to_draw_dashes_with_bezier(self, config):
+        """
+        This function yields a drawDashesWithBezier object for each field we are interested in representing synthetically. 
+        """
+        field_to_draw_dashes_with_bezier = {}
+        for field in self.fields:
+            bezier_dash_dict = config["fields"][field]["bezier_dash"]
+            height_range = bezier_dash_dict["height_range"]
+            width_range = bezier_dash_dict["width_range"]
+            x0_range = bezier_dash_dict["x0_range"]
+            x1_range = bezier_dash_dict["x1_range"]
+            x2_range = bezier_dash_dict["x2_range"]
+            x3_range = bezier_dash_dict["x3_range"]
+            y0_range = bezier_dash_dict["y0_range"]
+            y1_range = bezier_dash_dict["y1_range"]
+            y2_range = bezier_dash_dict["y2_range"]
+            y3_range = bezier_dash_dict["y3_range"]
+            field_to_draw_dashes_with_bezier[field] = drawDashesWithBezier(height_range, width_range, x0_range, x1_range, x2_range, x3_range, y0_range, y1_range, y2_range, y3_range)
+        return field_to_draw_dashes_with_bezier
+
+    def get_draw_word_on_image_objects(self):
+        """
+        This function yields a drawWordOnImage object for each field we are interested in representing synthetically. 
+        """
+        field_to_draw_word_on_image_object = {}
+        for field in self.fields:
+            draw_dash_object = self.fields_to_draw_dashes[field]
+            draw_word_on_image_object = drawWordOnImageInstantiator.get_draw_on_image_object(self.font_letter_plot_dictionary, draw_dash_object)
+            field_to_draw_word_on_image_object[field] = draw_word_on_image_object
+        return field_to_draw_word_on_image_object
 
     def get_all_vocab(self):
+        """
+        This function gathers all the words from the various vocabularies we have, collects them in a single list and returns the list.
+        """
         all_vocabulary = []
         for vocab_manager in self.field_to_vocab_manager.values():
             all_vocabulary += vocab_manager.vocabulary
         return all_vocabulary
 
     def get_font_object_manager_given_vocabulary(self, config: dict):
+        """
+        This function yields a fontObjectManagerGivenVocabulary object for our collected vocabulary. 
+        """
         fonts_and_weights = config["path_to_fonts_and_weights_json"]
         font_size_lower_bound = self.font_size_manager.get_lower_bound()
         font_size_upper_bound = self.font_size_manager.get_upper_bound()
         return fontObjectManagerGivenVocabulary(self.all_vocabulary, fonts_and_weights, font_size_lower_bound, font_size_upper_bound)
 
     def get_image_base_and_image_base_start_coordinates(self, config: dict) -> np.array:
-        rgb_image = Image.open(config["path_to_base_image"])
-        rgb_image = rgb_image.convert("RGB")
+        """
+        This function returns the full or partial base image that we will merge word images onto. 
+            It also returns the start coordinates for the given image that encapsulates all other 
+            windows on the image of interest so that we can crop the full image to make our computation faster. 
+            The coordinates are returned so that we can update the coordinate points of our other windows
+            on the base image for our different fields as well. 
+        """
+        image = Image.open(config["path_to_base_image"])
+        rgb_image = image.convert("RGB")
         full_image = np.array(rgb_image)
         if config["partial_base_image"]["bool"]:
             bounds_for_windows = []
@@ -1046,24 +1179,46 @@ class mergeWordImagesOnBaseImage():
             return full_image, 0, 0
         
     def update_window_bounds(self, new_x_min: int, new_y_min: int):
+        """
+        If the user plotted a quadrilateral on the full base image that is of interest, and the base image is going to be
+            cropped down then the coordinates of the quadrilateral need to be updated as well. 
+        """
         for merge_word_image_on_base_image in self.field_to_merge_word_image_on_base_image.values():
             merge_word_image_on_base_image.update_bounds(new_x_min, new_y_min)
         self.crop_merged_image_to_view_size_object.update_bounds(new_x_min, new_y_min)
 
     def get_format_string(self, config: dict):
+        """
+        This function returns a format string that can be filled in depending on how the user wants text output from
+        our model to look like. 
+        """
         format_string_path = config["partial_base_image"]["format_string_path"]
         with open(format_string_path, 'r') as format_string_in:
             return format_string_in.read()
 
     def get_fields_to_input_into_format_string(self, config: dict):
+        """
+        This function returns a list of fields from our config file that we want to input into our format string.
+        """
         return config["partial_base_image"]["fields_to_input_into_format_string"]
 
     def create_fields_to_text_for_format_string(self, fields_to_generated_text: dict):
+        """
+        This function gets the fields of interest to input into our format string from the dict of generated text that is created when merging
+        word images onto the base image.
+
+        Args:
+            fields_to_generated_text: This is a dict object that maps a given field to a generated text from the vocabularly from this field. 
+        """
         fields_to_text_for_format_string = {field:fields_to_generated_text[field] for field in self.fields_to_input_into_format_string}
         return fields_to_text_for_format_string
 
     def get_base_image_merged_with_word_images(self, get_text_randomly: bool):
         """
+        This is the main function of the class. It takes a copy of the base image, word images, merges them, applies transforms to different images, not necessarily in that order.
+
+        Args:
+            get_text_randomly: This is a boolean value that determines if text is to be randomly sampled from our vocabulary.  
         """
         # make a copy of the base image
         base_image = self.base_image.copy()
@@ -1092,13 +1247,11 @@ class mergeWordImagesOnBaseImage():
         track_images = []
         track_underlines = []
 
-        print("Sequence")
         # Generate the images and underline start positions for each field
         for field in self.fields:
             text = fields_to_generated_text[field]
             font_color = self.font_color_manager.get_font_color()
-            print(font_color)
-            image, underline_start_pos = self.draw_word_on_image_object.get_image(text, False, font_size, background_color, font_color, font_object)
+            image, underline_start_pos = self.field_to_draw_word_on_image_object[field].get_image(text, False, font_size, background_color, font_color, font_object)
             fields_to_generated_word_images[field] = image
             fields_to_generated_word_images_underline_start_pos[field] = underline_start_pos
             track_fields.append(field)
@@ -1119,19 +1272,4 @@ class mergeWordImagesOnBaseImage():
         fields_to_text_for_format_string = self.create_fields_to_text_for_format_string(fields_to_generated_text)
 
         # return the cropped and transformed image
-        return transformed_merged_image, self.format_string.format(**fields_to_text_for_format_string), font_object.path
-        
-
-
-
-
-
-
-# Class that transforms (Add blotting to lettering to simulate how ink might blot)
-# Only thing I can think of is to find the text based on color then randomly blot. # This transform needs to happen before others. 
-
-
-# Class that transforms (Give option to adjust the shading of the font color based on location on the image.)
-
-#  Changes to existing features:
-#         - fonts that are by default apart of the library will be stored in a better way.
+        return transformed_merged_image, self.format_string.format(**fields_to_text_for_format_string)
