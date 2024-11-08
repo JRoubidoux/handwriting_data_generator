@@ -26,7 +26,7 @@ if __name__ == "__main__":
     font_color_lower_bound = font_color_manager.get_lower_bound()
     font_color_upper_bound = font_color_manager.get_upper_bound()
 
-    base_image_transforms = [LightenOrDarkenImage(p=0.7, always_apply=False), A.GaussNoise(var_limit=(5, 10), per_channel=False, p=0.7, always_apply=False)]
+    base_image_transforms = [A.GaussNoise(var_limit=(5, 10), per_channel=False, p=0.7, always_apply=False)]
     word_image_same_transforms = None 
     word_image_different_transforms = [ConvertDataType(dtype=np.uint8, p=1.0), lightenOrDarkenPartsOfWord(font_color_lower_bound, font_color_upper_bound, 0.9, 0.9, (2, 3), (2, 4)), A.Affine(shear={"x":(-25, 25), "y":0}, rotate=(0.5), p=0.8, always_apply=False, fit_output=True, cval=255), A.Compose([A.Downscale(scale_range=(0.95, 0.95), p=1), A.GaussNoise(var_limit=(15, 20), per_channel=False, p=1.0), A.GlassBlur(sigma=0.001, max_delta=1, iterations=1, p=1), A.Morphological(p=1, scale=(2, 3), operation='erosion'), A.GaussianBlur(blur_limit=(5, 5), p=1.0), A.Morphological(p=1, scale=(2, 3), operation='dilation')], p=0.8), A.ElasticTransform(p=0.8, always_apply=False), A.GaussNoise(var_limit=(20, 40), per_channel=False, p=0.8, always_apply=False)]
     merged_image_transforms = [A.ColorJitter(brightness=(0.8, 1.1), contrast=(0.9999, 1.0001), saturation=(0.9999, 1.0001), hue=(-0.0001, 0.00001), p=0.8, always_apply=False), A.ImageCompression(quality_range=(50, 50), p=0.8, always_apply=False), LightenOrDarkenImage(p=0.8, always_apply=False), A.GaussNoise(var_limit=(30, 50), per_channel=False, p=0.8, always_apply=False)]
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     if not os.path.exists(merged_images_output_path):
         os.makedirs(merged_images_output_path)
 
-    for i in range(20):
+    for i in range(100):
         result, text = merge_word_images_on_base_image.get_base_image_merged_with_word_images(False)
 
         result_as_PIL = Image.fromarray(result)
