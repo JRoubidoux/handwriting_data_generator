@@ -18,7 +18,7 @@ class ConvertDataType(A.ImageOnlyTransform):
         self.always_apply = always_apply
         self.p = p
 
-    def apply(self, image: np.ndarray, **params):
+    def apply(self, image: np.ndarray, **params) -> np.ndarray:
         probability_value = self.p
         if self.always_apply:
             probability_value = 1.0
@@ -28,7 +28,7 @@ class ConvertDataType(A.ImageOnlyTransform):
         else:
             return image
 
-    def get_transform_init_args_names(self):
+    def get_transform_init_args_names(self) -> tuple[str, str, str]:
         return ("dtype", "always_apply", "p")
 
 class lightenOrDarkenPartsOfWord(A.ImageOnlyTransform):
@@ -59,7 +59,7 @@ class lightenOrDarkenPartsOfWord(A.ImageOnlyTransform):
         self.always_apply = always_apply
         self.p = p
 
-    def randomLightenOrDarken(self, image: np.array):
+    def randomLightenOrDarken(self, image: np.ndarray) -> np.ndarray:
         """
         This function employs the main logic to systematically lighten, darken or allow parts of the image to remain the same.
         
@@ -271,7 +271,7 @@ class lightenOrDarkenPartsOfWord(A.ImageOnlyTransform):
         else:
             return image
 
-    def get_transform_init_args_names(self):
+    def get_transform_init_args_names(self) -> tuple[str, str, str]:
         return ("background_color", "always_apply", "p")
 
 
@@ -295,7 +295,7 @@ class determineLightenNormalOrDarkenValues():
         self.bottom_left = bottom_left
         self.top_right_minus_top_left = top_right - top_left
 
-    def get_value(self, vertical_prob: float, horizontal_prob: float):
+    def get_value(self, vertical_prob: float, horizontal_prob: float) -> int:
         """
         This function returns the average value of a lighten, normal, or darken value for a given place in a rectangle
 
@@ -331,7 +331,7 @@ class LightenOrDarkenImage(A.ImageOnlyTransform):
         self.always_apply = always_apply
         self.p = p
 
-    def augment_array(self, image: np.array):
+    def augment_array(self, image: np.ndarray) -> np.ndarray:
         '''
         This function allows us to lighten or darken image data following a polynomial line bounded between x: [0,1] and y: [0,1] in R2.
 
@@ -389,7 +389,7 @@ class LightenOrDarkenImage(A.ImageOnlyTransform):
         else:
             return image
 
-    def get_transform_init_args_names(self):
+    def get_transform_init_args_names(self) -> tuple[str, str]:
         return ("always_apply", "p")
 
 class TrimPadding(A.ImageOnlyTransform):
@@ -410,7 +410,7 @@ class TrimPadding(A.ImageOnlyTransform):
         self.always_apply = always_apply
         self.p = p
 
-    def trim(self, image: np.array):
+    def trim(self, image: np.ndarray) -> np.ndarray:
         """
         Trim the padding around the non-background area of the image.
 
@@ -432,7 +432,7 @@ class TrimPadding(A.ImageOnlyTransform):
             trimmed_image = image[true_y_pos_start:true_y_pos_end+1, true_x_pos_start:true_x_pos_end+1, :]
             return trimmed_image
 
-    def apply(self, image: np.array, **params):
+    def apply(self, image: np.ndarray, **params) -> np.ndarray:
         """
         Apply our transform.
         """
@@ -445,5 +445,5 @@ class TrimPadding(A.ImageOnlyTransform):
         else:
             return image
 
-    def get_transform_init_args_names(self):
+    def get_transform_init_args_names(self) -> tuple[str]:
         return ("background_color",)
