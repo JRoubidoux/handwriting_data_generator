@@ -1,8 +1,6 @@
 import numpy as np
 import albumentations as A
 import random
-import matplotlib.pyplot as plt
-from PIL import Image
 
 # Future things to do
 #TODO: In the lightenOrDarkenPartsOfWord transform, make the logic more robust

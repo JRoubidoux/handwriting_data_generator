@@ -10,7 +10,7 @@ image_generation:
   base_image:
     bool: True
     path_to_base_image: "handwriting_data_generator/tutorial/resources/007646218_00102_blank_template.png"
-    path_to_fonts_and_weights_json: "handwriting_data_generator/tutorial/resources/fonts_and_weights_handwriting_for_iowa_2_float.json"
+    path_to_fonts_and_weights_json: "handwriting_data_generator/tutorial/resources/fonts_and_weights_handwriting_for_iowa_2_float.json" # "sandbox/vocabularies_of_interest/fonts_and_weights.json" #
     partial_base_image: # Will the generated image be words on the full record or clip the record to certain parts
       bool: True
       view_window_path: "handwriting_data_generator/tutorial/resources/occupation_view_window.json"
@@ -27,7 +27,7 @@ image_generation:
     fields:
       occupation:
         path_to_quadrilateral: "handwriting_data_generator/tutorial/resources/occupation_text_window.json"
-        path_to_vocabulary: "handwriting_data_generator/tutorial/resources/occupations_vocabulary.json"
+        path_to_vocabulary: "sandbox/vocabularies_of_interest/occupations_representative.json" # "handwriting_data_generator/tutorial/resources/occupations_vocabulary.json" #
         x_start_left_range_percentage: 0.05
         x_start_right_range_percentage: 0.1
         x_end_left_range_percentage: 0.20

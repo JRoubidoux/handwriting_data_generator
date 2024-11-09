@@ -37,12 +37,14 @@ if __name__ == "__main__":
     if not os.path.exists(merged_images_output_path):
         os.makedirs(merged_images_output_path)
 
-    for i in range(100):
+    for i in range(10000):
+        print("index", i)
         result, text = merge_word_images_on_base_image.get_base_image_merged_with_word_images(False)
 
         result_as_PIL = Image.fromarray(result)
 
-        image_name = f"{i}.png"
+
+        """image_name = f"{i}.png"
         image_path = os.path.join(merged_images_output_path, image_name)
         print(i)
-        result_as_PIL.save(image_path)
+        result_as_PIL.save(image_path)"""
