@@ -626,7 +626,7 @@ class drawWordOnImage():
                 if potential_y_coord_start > y_coord_start:
                     y_coord_start = potential_y_coord_start
                 width = self.font_letter_plot_dictionary[font_object_path][font_size][letter]['width']
-                width_of_image += int(width*1.25) # It's often the case that the width of an image
+                width_of_image += int(width*3)
             for letter_pos, letter in enumerate(text):
                 letter_height = self.font_letter_plot_dictionary[font_object_path][font_size][letter]['height']
                 letter_y_coord = self.font_letter_plot_dictionary[font_object_path][font_size][letter]['start_coordinates'][1]
@@ -1320,4 +1320,4 @@ class mergeWordImagesOnBaseImage():
         fields_to_text_for_format_string = self.create_fields_to_text_for_format_string(fields_to_generated_text)
 
         # return the cropped and transformed image
-        return transformed_merged_image, self.format_string.format(**fields_to_text_for_format_string)
+        return transformed_merged_image, self.format_string.format(**fields_to_text_for_format_string), font_object.path
