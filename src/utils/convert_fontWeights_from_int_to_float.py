@@ -1,9 +1,10 @@
 import json
+import sys
 
 if __name__ == "__main__":
-    input_file = r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\RLL_handwriting_data_generator\fonts_and_weights\fonts_and_weights_handwriting_for_iowa_2.json"
-    output_file = r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\RLL_handwriting_data_generator\fonts_and_weights\fonts_and_weights_handwriting_for_iowa_2_float.json"
-
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    
     with open(input_file, "r") as json_in:
         dict_in = json.load(json_in)
 
