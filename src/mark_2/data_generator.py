@@ -1320,4 +1320,4 @@ class mergeWordImagesOnBaseImage():
         fields_to_text_for_format_string = self.create_fields_to_text_for_format_string(fields_to_generated_text)
 
         # return the cropped and transformed image
-        return transformed_merged_image, self.format_string.format(**fields_to_text_for_format_string), font_object.path
+        return transformed_merged_image, self.format_string.format(**fields_to_text_for_format_string)
