@@ -5,6 +5,7 @@ import random
 # Future things to do
 #TODO: In the lightenOrDarkenPartsOfWord transform, make the logic more robust
 #TODO: Create a transform that allows
+#TODO: Create test cases for these transforms.
 
 class ConvertDataType(A.ImageOnlyTransform):
     """
@@ -225,6 +226,12 @@ class lightenOrDarkenPartsOfWord(A.ImageOnlyTransform):
 
                 width_of_square = (top_right_coordinate[0] - top_left_coordinate[0])
                 height_of_square = (bottom_left_coordinate[1] - top_left_coordinate[1])
+
+                if width_of_square == 0: 
+                    width_of_square = 1
+
+                if height_of_square == 0:
+                    height_of_square = 1
 
                 column_probabilities = np.array([(k/width_of_square) for k in range(width_of_square+1)])
                 row_probabilities = np.array([(k/height_of_square) for k in range(height_of_square+1)])
