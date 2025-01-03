@@ -33,18 +33,18 @@ if __name__ == "__main__":
 
     merge_word_images_on_base_image = dg.mergeWordImagesOnBaseImage(base_image_transforms, word_image_same_transforms, word_image_different_transforms, merged_image_transforms, config["image_generation"]["base_image"], background_color_manager, font_color_manager, font_size_manager)
 
-    merged_images_output_path = r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\sandbox\merged_word_images"
+    merged_images_output_path = r"C:\Users\Jackson Roubidoux\RLL\repos\data_generator\sandbox\merged_word_images_for_tutorial"
     if not os.path.exists(merged_images_output_path):
         os.makedirs(merged_images_output_path)
 
-    for i in range(10000):
+    for i in range(10):
         print("index", i)
         result, text = merge_word_images_on_base_image.get_base_image_merged_with_word_images(False)
-
+        print(text)
+        print()
         result_as_PIL = Image.fromarray(result)
 
 
-        """image_name = f"{i}.png"
+        image_name = f"{i}.png"
         image_path = os.path.join(merged_images_output_path, image_name)
-        print(i)
-        result_as_PIL.save(image_path)"""
+        result_as_PIL.save(image_path)

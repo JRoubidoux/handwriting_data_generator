@@ -8,6 +8,7 @@ import albumentations as A
 
 # Current:
 # TODO: fix some logic errors in the get character dimensions. 
+# TODO: Check to see if at least one font supports all characters.
 
 # Future:
 # TODO: Fix the logical errors in get_font_letter_plot_dictionary.
@@ -16,6 +17,23 @@ import albumentations as A
 # TODO: Rather than dynamically compute all the letter sizes from the get go, do this for each word rendered during runtime. Cut the up front time.
 # TODO: Rather than compute the length of a word each time it is to be rendered even if it's been rendered before, store this information dynamically, unless the vocab is very large. Define what this means. 
 # TODO: make sure that the array assignment for underline color in the draw_underline function in the draw word on image class is working.
+
+class CustomError(Exception):
+    """Custom exception for specific error handling."""
+    def __init__(self, message):
+        """
+        Initialize the custom error.
+        
+        Args:
+            message (str): Description of the error.
+        """
+        super().__init__(message)
+
+    def __str__(self):
+        """
+        Return a string representation of the error.
+        """
+        return self.args[0]
 
 class vocabManager():
     """
@@ -91,14 +109,7 @@ class fontObjectManager():
         Args:
             font_and_weights (dict): A dictionary that maps font_paths to a float value that represents the weight of that font. 
         """
-        smallest_weight = float("inf")
-        for weight in fonts_and_weights.values():
-            if weight < smallest_weight:
-                smallest_weight = weight
-        if smallest_weight <= 0:
-            raise ValueError("The weight for a given font file must be greater than zero.")
-        else:
-            return smallest_weight
+        return min(list(fonts_and_weights.values())) # TODO: Make sure this works.
 
     def create_list_of_fonts_to_sample_from(self, fonts_and_weights, font_size_lower_bound, font_size_upper_bound) -> list[dict]:
         """
@@ -129,6 +140,7 @@ class fontObjectManagerGivenCharacters(fontObjectManager):
     def __init__(self, vocabulary: list, fonts_and_weights_path: str, font_size_lower_bound: int, font_size_upper_bound: int):
         super().__init__(fonts_and_weights_path, font_size_lower_bound, font_size_upper_bound)
         self.character_to_font_indicies = self.determine_fonts_for_characters(vocabulary)
+        self.ensure_fonts_support_characters(vocabulary)
 
     def determine_fonts_for_characters(self, vocabulary: list) -> dict:
         """
@@ -218,10 +230,31 @@ class fontObjectManagerGivenCharacters(fontObjectManager):
                 else:
                     temp_list.append(character)
                     last_character = character
-
             return ''.join(temp_list)
+        
+    def ensure_fonts_support_characters(self, vocabulary: list):
+        # Get all of the unique characters from the vocabulary
+        set_of_characters = set()
+        set_of_characters.add("c")
+        for word in vocabulary:
+            for character in word:
+                set_of_characters.add(character)
+        # Check that each character has some fonts that support it. Otherwise raise error.
+        unsupported_characters = set()
+        for character in set_of_characters:
+            if len(self.character_to_font_indicies[character]) == 0:
+                unsupported_characters.add(character)
+        if len(unsupported_characters) > 0:
+            output_string = ", ".join([ord(character) for character in unsupported_characters])
+            raise CustomError(f"You have the following characters (represented as character codes) in your vocabulary that don't have fonts that support them: {output_string}")
+        # Check that a font exists to support all of the characters in the vocabulary.
+        all_text_with_c = "".join([character for character in set_of_characters])
+        list_of_potential_fonts = list(set.intersection(*[self.character_to_font_indicies[character] for character in all_text_with_c]))
+        if len(list_of_potential_fonts) == 0:
+            raise CustomError("There is not a single font you've selected that supports every character in the vocabulary. It is requisite that there is one font that supports all characters.")
 
 class fontLetterPlotDictionaryInstantiator():
+    # TODO: See if we can make this guaranteed rather than relying on that method that is laid out below. 
     """
     This class create a dictionary object that determines the height, width and start coordinates for characters that can be drawn on an image given a font type and a font size. 
     """
@@ -232,8 +265,6 @@ class fontLetterPlotDictionaryInstantiator():
         """
         font_letter_plot_dictionary = {}
         for index, font_dictionary in enumerate(font_object_manager_given_characters.font_dictionaries):
-            if index == 201:
-                print("stop_here")
             for font_size, font_object in font_dictionary.items():
                 if font_object.path not in font_letter_plot_dictionary:
                     font_letter_plot_dictionary[font_object.path] = {}
@@ -301,7 +332,7 @@ class fontLetterPlotDictionaryInstantiator():
             image_as_array = np.array(image)        
             non_bg_mask = np.any(image_as_array != [255, 255, 255], axis=-1) # Find non-white pixels
             y_non_bg, x_non_bg = np.where(non_bg_mask) # Get the bounding box of non-background pixels
-            if y_non_bg.size == 0:
+            if y_non_bg.size == 0 or x_non_bg.size == 0:
                 return None
             else:
                 true_y_pos_start, true_y_pos_end = y_non_bg.min(), y_non_bg.max()
@@ -330,6 +361,7 @@ class fontObjectManagerGivenVocabulary():
                 reduced_text = self.font_object_manager_given_characters.get_reduced_text(text)
                 reduced_text_with_c = reduced_text + "c"
                 fonts_for_text_labels[reduced_text] = list(set.intersection(*[self.font_object_manager_given_characters.character_to_font_indicies[character] for character in reduced_text_with_c])) # For each label in our vocabulary, set it equal to a list of indicies that correspond to all the fonts that support that word.
+                # TODO: Check that the reduced text has at least one font. 
         return fonts_for_text_labels
 
     def get_font_based_on_word(self, text: str, font_size: int) -> ImageFont:
@@ -458,7 +490,7 @@ class fontSizeManager(numberManager):
         return self.get_number()
 
 
-# Class that allows for images can be padded in different ways to allow for words to be places differently.
+# Class that allows for images can be padded in different ways to allow for words to be placed differently.
 class padImage():
     """
     This class is intended to pad the generated image so that the generated word appears in different places on images generated.
@@ -498,9 +530,9 @@ class configLoader():
         self.config_file_path = config_file_path
 
     def load_config(self) -> dict:
-        '''
+        """
         This function loads a .yaml file for the script to use. 
-        '''
+        """
         with open(self.config_file_path, 'r') as stream:
             try:
                 config = yaml.safe_load(stream)
@@ -550,6 +582,7 @@ class cubicBezierCurve():
 
 class drawDashesWithBezier():
     def __init__(self, height_range: tuple, width_range: tuple, x0_range: tuple, x1_range: tuple, x2_range: tuple, x3_range: tuple, y0_range: tuple, y1_range: tuple, y2_range: tuple, y3_range: tuple):
+        # TODO: Check each of the ranges to make sure they are good. 
         self.height_range = height_range
         self.width_range = width_range
         self.x0_range = x0_range
@@ -601,6 +634,7 @@ class drawWordOnImage():
     """
     This class generates a synthetic image and draws text on it.
     """
+    # TODO: We could create a dictionary that maps the words in the dict to the true dimensions for the words and append those as we go. 
     def __init__(self, font_letter_plot_dictionary: dict, draw_dashes_with_bezier: drawDashesWithBezier, image_padder: padImage):
         self.font_letter_plot_dictionary = font_letter_plot_dictionary
         self.image_padder = image_padder
@@ -647,7 +681,7 @@ class drawWordOnImage():
 
     def add_padding_to_adjust_to_transforms(self, image: np.ndarray, background_color: int) -> np.ndarray:
         """
-        Some transformations create features beyond the bounding box that encapsulates the text in an image. As such, we want some wiggle room to unsure
+        Some transformations create features beyond the bounding box that encapsulates the text in an image. As such, we want some wiggle room to ensure
         that these features are encapsulated. After this, the image may be trimmed again. 
         """
         height, width, depth = image.shape
@@ -728,7 +762,7 @@ class drawWordOnImageInstantiator():
     def get_draw_on_image_object(font_letter_plot_dictionary: dict, draw_dashes_with_bezier: drawDashesWithBezier, image_padder: padImage = None) -> drawWordOnImage:
         return drawWordOnImage(font_letter_plot_dictionary, draw_dashes_with_bezier, image_padder)
 
-class point():
+class Point():
     """
     This class represents a point object: (x, y) coordinate on the cardesian plane.
     """
@@ -745,39 +779,20 @@ class Quadrilateral():
     """
     def __init__(self, path_to_quadrilateral: str):
         self.points = self.load_points(path_to_quadrilateral)
-        self.assign_points()
-        self.x_start = round(min(self.point_1.x, self.point_4.x))
-        self.x_end = round(max(self.point_2.x, self.point_3.x))
-        self.y_start = round(min(self.point_1.y, self.point_2.y))
-        self.y_end = round(max(self.point_4.y, self.point_3.y)) 
+        self.x_start = round(min([point_.x for point_ in self.points]))
+        self.x_end = round(max([point_.x for point_ in self.points]))
+        self.y_start = round(min([point_.y for point_ in self.points]))
+        self.y_end = round(max([point_.y for point_ in self.points]))
         self.set_width()
         self.set_height()       
 
     def load_points(self, path_to_quadrilateral: str) -> list[float]:
         with open(path_to_quadrilateral, 'r') as json_in:
             dict_ = json.load(json_in)
-            return dict_["points"]
-
-    def assign_points(self):
-        """
-        point_1 corresponds to the top left point.
-        point_2 is the top right point
-        point_3 is the bottom right point
-        point_4 is the bottom left point
-        """
-        points_sorted_by_x = sorted(self.points, key=lambda x: x[0])
-        if points_sorted_by_x[0][1] < points_sorted_by_x[1][1]:
-            self.point_1 = point(points_sorted_by_x[0])
-            self.point_4 = point(points_sorted_by_x[1])
-        else:
-            self.point_4 = point(points_sorted_by_x[0])
-            self.point_1 = point(points_sorted_by_x[1])
-        if points_sorted_by_x[2][1] < points_sorted_by_x[3][1]:
-            self.point_2 = point(points_sorted_by_x[2])
-            self.point_3 = point(points_sorted_by_x[3])
-        else:
-            self.point_3 = point(points_sorted_by_x[2])
-            self.point_2 = point(points_sorted_by_x[3])
+            if len(dict_["points"]) != 4:
+                raise CustomError(f"The quadrilateral should have 4 points. This object has {len(dict_["points"])} points.")
+            else:
+                return [Point(point) for point in dict_["points"]]
 
     def set_width(self):
         self.width =  (self.x_end-self.x_start)
@@ -826,16 +841,13 @@ class getBoundsForWindowOnBaseImageFromQuadrilateral():
         """
         This gets the bounds in which the window can be placed on the base image.
         """
+        # Change this so that there isn't a mean pos, just take the boundries of the bbox.
         width = self.quadrilateral.get_width()
         height = self.quadrilateral.get_height()
-        x_start_mean_pos = (self.quadrilateral.point_1.x + self.quadrilateral.point_4.x)/2
-        x_end_mean_pos = (self.quadrilateral.point_2.x + self.quadrilateral.point_3.x)/2
-        y_start_mean_pos = (self.quadrilateral.point_1.y+self.quadrilateral.point_2.y)/2
-        y_end_mean_pos = (self.quadrilateral.point_3.y+self.quadrilateral.point_4.y)/2
-        x_start_lower_bound, x_start_upper_bound = self.get_bounds(x_start_mean_pos, width, self.x_start_left_range_percentage, self.x_start_right_range_percentage)
-        x_end_lower_bound, x_end_upper_bound = self.get_bounds(x_end_mean_pos, width, self.x_end_left_range_percentage, self.x_end_right_range_percentage)
-        y_start_lower_bound, y_start_upper_bound = self.get_bounds(y_start_mean_pos, height, self.y_start_lower_range_percentage, self.y_start_higher_range_percentage)
-        y_end_lower_bound, y_end_upper_bound = self.get_bounds(y_end_mean_pos, height, self.y_end_lower_range_percentage, self.y_end_higher_range_percentage)
+        x_start_lower_bound, x_start_upper_bound = self.get_bounds(self.quadrilateral.x_start, width, self.x_start_left_range_percentage, self.x_start_right_range_percentage)
+        x_end_lower_bound, x_end_upper_bound = self.get_bounds(self.quadrilateral.x_end, width, self.x_end_left_range_percentage, self.x_end_right_range_percentage)
+        y_start_lower_bound, y_start_upper_bound = self.get_bounds(self.quadrilateral.y_start, height, self.y_start_lower_range_percentage, self.y_start_higher_range_percentage)
+        y_end_lower_bound, y_end_upper_bound = self.get_bounds(self.quadrilateral.y_end, height, self.y_end_lower_range_percentage, self.y_end_higher_range_percentage)
         return x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound
 
 class determineNewBaseImageBounds():
@@ -887,7 +899,7 @@ class determineNewWindowBounds():
         y_end_upper_bound = bounds_for_words[7] - y_min
         return x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound
 
-class window():
+class Window():
     """
     This is the base class for windows (ranges when we might crop a base image or merge a word).
     """
@@ -917,7 +929,7 @@ class window():
     def get_bounds(self) -> tuple[int, int, int, int, int, int, int, int]:
         return [self.x_start_lower_bound, self.x_start_upper_bound, self.x_end_lower_bound, self.x_end_upper_bound, self.y_start_lower_bound, self.y_start_upper_bound, self.y_end_lower_bound, self.y_end_upper_bound]
 
-class mergeWordImageOnBaseImage(window):
+class mergeWordImageOnBaseImage(Window):
     """
     This class takes the bounds for a window where we want a word image to be merged on the base image, and takes in a word image, resizes it and merges it onto the base image. 
     The merging works by comparing the pixels of the word image with the pixels from the base image and the darker pixel is kept.
@@ -951,6 +963,7 @@ class mergeWordImageOnBaseImage(window):
 
         merge_x_start = x_start
         if new_width < window_width: # If the new width of our word image is smaller than the width of the window on the base image we're to merge on, let the x-position vary from the start of the window so that there is variation in word placement. 
+            # TODO: Make this a parameter that the user can influence. 
             difference = window_width-new_width
             difference_scaled = int(difference/20)
             merge_x_start = x_start + np.clip(int(np.random.chisquare(3)*difference_scaled), 0, difference)
@@ -985,7 +998,7 @@ class mergeWordImageOnBaseImageInstantiator():
         x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound = getBoundsForWindowOnBaseImageFromQuadrilateral(quadrilateral, x_start_left_range_percentage, x_start_right_range_percentage, x_end_left_range_percentage, x_end_right_range_percentage, y_start_lower_range_percentage, y_start_higher_range_percentage, y_end_lower_range_percentage, y_end_higher_range_percentage).get_bounds_for_window_on_base_image()
         return mergeWordImageOnBaseImage(x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound, new_width_random_range_start, new_width_random_range_end)
 
-class cropMergedImageToViewSize(window):
+class cropMergedImageToViewSize(Window):
     """
     This class crops the merged image down to a random size (bounds for size determined by user) to add variation to our images. 
     """
@@ -999,6 +1012,8 @@ class cropMergedImageToViewSize(window):
         Args:
             image: an np.ndarray of our image.
         """
+        # TODO: make and handle cases where these are equal to zero or are the same.
+        # TODO: Check to see that the lower bound isn't higher than the upper bound. 
         x_start = np.random.randint(self.x_start_lower_bound, self.x_start_upper_bound)
         x_end = np.random.randint(self.x_end_lower_bound, self.x_end_upper_bound)
         y_start = np.random.randint(self.y_start_lower_bound, self.y_start_upper_bound)
@@ -1033,6 +1048,7 @@ class transformManager():
             return image
         
 class transformWordImagesForBaseImage(transformManager):
+    # TODO: Fix the replay transforms
     """
     This class is made to manage transformations for word images that are to be merged on the base image. 
 
@@ -1113,6 +1129,7 @@ class mergeWordImagesOnBaseImage():
         This function gets a cropMergedImageToViewSizeInstantiator object.
         """
         if config["partial_base_image"]["bool"]:
+            # TODO: Check here if the bounds are what we would expect them to be. 
             view_window_path = config["partial_base_image"]["view_window_path"]
             x_start_left_range_percentage = config["partial_base_image"]["x_start_left_range_percentage"]
             x_start_right_range_percentage = config["partial_base_image"]["x_start_right_range_percentage"]
@@ -1126,6 +1143,7 @@ class mergeWordImagesOnBaseImage():
         else:
             return None
         
+    # TODO: Check that the fields in the config match the fields of interest in the config and match the fields for the format string. 
     def get_fields(self, config: dict) -> list[str]:
         """
         This function gets the fields that we want to paste on our base image.
@@ -1159,6 +1177,7 @@ class mergeWordImagesOnBaseImage():
         """
         This function yields a drawDashesWithBezier object for each field we are interested in representing synthetically. 
         """
+        # TODO: Check ranges on this 
         field_to_draw_dashes_with_bezier = {}
         for field in self.fields:
             bezier_dash_dict = config["fields"][field]["bezier_dash"]

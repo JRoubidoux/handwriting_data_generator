@@ -27,7 +27,7 @@ image_generation:
     fields:
       occupation:
         path_to_quadrilateral: "handwriting_data_generator/tutorial/resources/occupation_text_window.json"
-        path_to_vocabulary: "sandbox/vocabularies_of_interest/occupations_representative.json" # "handwriting_data_generator/tutorial/resources/occupations_vocabulary.json" #
+        path_to_vocabulary: "handwriting_data_generator/tutorial/resources/occupations_vocabulary.json"
         x_start_left_range_percentage: 0.05
         x_start_right_range_percentage: 0.1
         x_end_left_range_percentage: 0.20
