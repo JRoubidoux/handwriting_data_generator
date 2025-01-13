@@ -8,7 +8,6 @@ import albumentations as A
 
 # Current:
 # TODO: fix some logic errors in the get character dimensions. 
-# TODO: Check to see if at least one font supports all characters.
 
 # Future:
 # TODO: Fix the logical errors in get_font_letter_plot_dictionary.
@@ -183,6 +182,8 @@ class fontObjectManagerGivenCharacters(fontObjectManager):
         set_of_capable_fonts = set() # Since our fonts are weighted, our list of fonts we sample from may have duplicate references to the same font. As such, if we want to add this font more than once we have no need to check if the character is supported by the font multiple times.
         set_of_incapable_fonts = set() # Ditto to the above comment but we don't want to add these fonts. 
         for index in TTFonts_and_font_dicts.keys(): # For every font in our list of fonts. 
+            if index == 241:
+                print()
             font_path = TTFonts_and_font_dicts[index][0][self.font_size_lower_bound].path # Get the font path for the given font object
             ttfont = TTFonts_and_font_dicts[index][1]
             if font_path in set_of_capable_fonts: # If this font has already been checked and we know it supports the character then add it to our dictionary. 
@@ -251,7 +252,7 @@ class fontObjectManagerGivenCharacters(fontObjectManager):
         all_text_with_c = "".join([character for character in set_of_characters])
         list_of_potential_fonts = list(set.intersection(*[self.character_to_font_indicies[character] for character in all_text_with_c]))
         if len(list_of_potential_fonts) == 0:
-            raise CustomError("There is not a single font you've selected that supports every character in the vocabulary. It is requisite that there is one font that supports all characters.")
+            raise CustomError("There is not a single font you've selected that supports every character in the vocabulary. It is requisite that there is one font that has all of the characters in the font glyph.")
 
 class fontLetterPlotDictionaryInstantiator():
     # TODO: See if we can make this guaranteed rather than relying on that method that is laid out below. 
@@ -265,23 +266,29 @@ class fontLetterPlotDictionaryInstantiator():
         """
         font_letter_plot_dictionary = {}
         for index, font_dictionary in enumerate(font_object_manager_given_characters.font_dictionaries):
+            if index == 241:
+                print()
             for font_size, font_object in font_dictionary.items():
                 if font_object.path not in font_letter_plot_dictionary:
                     font_letter_plot_dictionary[font_object.path] = {}
                 if font_size not in font_letter_plot_dictionary[font_object.path]:
                     font_letter_plot_dictionary[font_object.path][font_size] = {}
-                new_coordinates_width_of_letter_height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, "c")
-                
-                if new_coordinates_width_of_letter_height_of_letter:
-                    if "c" not in font_letter_plot_dictionary[font_object.path][font_size]:
-                        new_coordinates, width_of_letter, height_of_letter = new_coordinates_width_of_letter_height_of_letter
-                        font_letter_plot_dictionary[font_object.path][font_size]["c"] = {}
-                        font_letter_plot_dictionary[font_object.path][font_size]["c"]['start_coordinates'] = new_coordinates
-                        font_letter_plot_dictionary[font_object.path][font_size]["c"]['width'] = width_of_letter
-                        font_letter_plot_dictionary[font_object.path][font_size]["c"]['height'] = height_of_letter
-                else:
-                    font_object_manager_given_characters.character_to_font_indicies["c"].remove(index)
-                    font_letter_plot_dictionary[font_object.path][font_size]["c"] = None
+
+                if index in font_object_manager_given_characters.character_to_font_indicies["c"]:
+                    new_coordinates_width_of_letter_height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, "c")
+                    
+                    if new_coordinates_width_of_letter_height_of_letter:
+                        if "c" not in font_letter_plot_dictionary[font_object.path][font_size]:
+                            new_coordinates, width_of_letter, height_of_letter = new_coordinates_width_of_letter_height_of_letter
+                            font_letter_plot_dictionary[font_object.path][font_size]["c"] = {}
+                            font_letter_plot_dictionary[font_object.path][font_size]["c"]['start_coordinates'] = new_coordinates
+                            font_letter_plot_dictionary[font_object.path][font_size]["c"]['width'] = width_of_letter
+                            font_letter_plot_dictionary[font_object.path][font_size]["c"]['height'] = height_of_letter
+                    else:
+                        # If the character is supported in the glyph of the font file. But we were unable to render it with the PIL draw function.
+                        font_object_manager_given_characters.character_to_font_indicies["c"].remove(index)
+                        font_letter_plot_dictionary[font_object.path][font_size]["c"] = None
+
                 for word in vocabulary:
                     if word == "dash_in_image_field" or word == "":
                         continue
@@ -297,7 +304,8 @@ class fontLetterPlotDictionaryInstantiator():
                                         font_letter_plot_dictionary[font_object.path][font_size][text]['width'] = width_of_letter
                                         font_letter_plot_dictionary[font_object.path][font_size][text]['height'] = height_of_letter
                                     else:
-                                        font_object_manager_given_characters.character_to_font_indicies[text].remove(index)
+                                        if text in font_object_manager_given_characters.character_to_font_indicies:
+                                            font_object_manager_given_characters.character_to_font_indicies[text].remove(index)
                                         font_letter_plot_dictionary[font_object.path][font_size][text] = None
                                 else:
                                     new_coordinates_width_of_letter_height_of_letter = fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height(font_object, text)
@@ -307,7 +315,8 @@ class fontLetterPlotDictionaryInstantiator():
                                         font_letter_plot_dictionary[font_object.path][font_size][text]['width'] = width_of_letter
                                         font_letter_plot_dictionary[font_object.path][font_size][text]['height'] = height_of_letter
                                     else:
-                                        font_object_manager_given_characters.character_to_font_indicies[text].remove(index)
+                                        if text in font_object_manager_given_characters.character_to_font_indicies:
+                                            font_object_manager_given_characters.character_to_font_indicies[text].remove(index)
                                         font_letter_plot_dictionary[font_object.path][font_size][text] = None
         return font_letter_plot_dictionary
     
@@ -347,22 +356,48 @@ class fontLetterPlotDictionaryInstantiator():
 class fontObjectManagerGivenVocabulary():
     def __init__(self, vocabulary: list, font_object_manager_given_characters: fontObjectManagerGivenCharacters):
         self.font_object_manager_given_characters = font_object_manager_given_characters
+        # Check that all words in our vocabularly are supported by at least one font. 
+        self.check_that_at_least_one_font_supports_all_characters(vocabulary)
         self.fonts_for_text_labels = self.get_font_for_text_labels(vocabulary)
+
+    def check_that_at_least_one_font_supports_all_characters(self, vocabulary):
+        temp_dict = {}
+        set_of_characters = set()
+        for text in vocabulary:
+            for character in text:
+                set_of_characters.add(character)
+        all_characters = "".join(list(set_of_characters))
+        reduced_text = self.font_object_manager_given_characters.get_reduced_text(all_characters)
+        self.get_font_for_text_label(reduced_text, temp_dict)
+        if temp_dict[reduced_text]:
+            del temp_dict
+        else:
+            raise CustomError("There is no single font that supports all characters in the vocabulary. "
+                              "There must be at least one font that has all characters in its glyph and the rendering of all the characters"
+                              " must be supported by the PIL draw function as defined in the function: "
+                              "fontLetterPlotDictionaryInstantiator.get_letter_coordinates_width_and_height()")
 
     def get_font_for_text_labels(self, vocabulary: list):
         fonts_for_text_labels = {}
         for text in vocabulary:
-            if text == "" or text == "dash_in_image_field":
-                if text not in fonts_for_text_labels:
-                    fonts_for_text_labels[text] = []
-                    for index, _ in enumerate(self.font_object_manager_given_characters.font_dictionaries):
-                        fonts_for_text_labels[text].append(index)
-            else:
-                reduced_text = self.font_object_manager_given_characters.get_reduced_text(text)
-                reduced_text_with_c = reduced_text + "c"
-                fonts_for_text_labels[reduced_text] = list(set.intersection(*[self.font_object_manager_given_characters.character_to_font_indicies[character] for character in reduced_text_with_c])) # For each label in our vocabulary, set it equal to a list of indicies that correspond to all the fonts that support that word.
-                # TODO: Check that the reduced text has at least one font. 
+            self.get_font_for_text_label(text, fonts_for_text_labels)
         return fonts_for_text_labels
+
+    def get_font_for_text_label(self, text: str, fonts_for_text_labels: dict):
+        if text == "" or text == "dash_in_image_field":
+            if text not in fonts_for_text_labels:
+                fonts_for_text_labels[text] = []
+                for index, _ in enumerate(self.font_object_manager_given_characters.font_dictionaries):
+                    fonts_for_text_labels[text].append(index)
+        else:
+            reduced_text = self.font_object_manager_given_characters.get_reduced_text(text)
+            reduced_text_with_c = reduced_text + "c"
+            list_of_fonts_for_reduced_text = list(set.intersection(*[self.font_object_manager_given_characters.character_to_font_indicies[character] for character in reduced_text_with_c])) # For each label in our vocabulary, set it equal to a list of indicies that correspond to all the fonts that support that word.
+            # Check that the reduced text has at least one font.
+            if list_of_fonts_for_reduced_text: 
+                fonts_for_text_labels[reduced_text] = list_of_fonts_for_reduced_text
+            else:
+                fonts_for_text_labels[reduced_text] = None
 
     def get_font_based_on_word(self, text: str, font_size: int) -> ImageFont:
         """
@@ -789,8 +824,9 @@ class Quadrilateral():
     def load_points(self, path_to_quadrilateral: str) -> list[float]:
         with open(path_to_quadrilateral, 'r') as json_in:
             dict_ = json.load(json_in)
-            if len(dict_["points"]) != 4:
-                raise CustomError(f"The quadrilateral should have 4 points. This object has {len(dict_["points"])} points.")
+            number_of_points = len(dict_["points"])
+            if number_of_points != 4:
+                raise CustomError(f"The quadrilateral should have 4 points. This object has {number_of_points} points.")
             else:
                 return [Point(point) for point in dict_["points"]]
 
@@ -904,6 +940,11 @@ class Window():
     This is the base class for windows (ranges when we might crop a base image or merge a word).
     """
     def __init__(self, x_start_lower_bound: int, x_start_upper_bound: int, x_end_lower_bound: int, x_end_upper_bound: int, y_start_lower_bound: int, y_start_upper_bound: int, y_end_lower_bound: int, y_end_upper_bound: int):
+        self.check_bounds(x_start_lower_bound, x_start_upper_bound, "x_start")
+        self.check_bounds(x_end_lower_bound, x_end_upper_bound, "x_end")
+        self.check_bounds(y_start_lower_bound, y_start_upper_bound, "y_start")
+        self.check_bounds(y_end_lower_bound, y_end_upper_bound, "y_end")
+
         self.x_start_lower_bound = x_start_lower_bound
         self.x_start_upper_bound = x_start_upper_bound
         self.x_end_lower_bound = x_end_lower_bound
@@ -912,6 +953,24 @@ class Window():
         self.y_start_upper_bound = y_start_upper_bound
         self.y_end_lower_bound = y_end_lower_bound
         self.y_end_upper_bound = y_end_upper_bound
+
+    def check_bounds(self, lower_bound: int, upper_bound: int, window_side: str):
+        if lower_bound > upper_bound:
+            raise CustomError(f"The lower bound is greater than the upper bound for the {window_side} part of the window.")
+
+    def get_start_or_end(self, lower_bound: int, upper_bound: int):
+        if lower_bound == upper_bound:
+            return lower_bound
+        else:
+            return np.random.randint(lower_bound, upper_bound)
+        
+    def get_starts_and_ends(self):
+        # Determine the bounds on the base image within which we'll merge our word image.
+        x_start = self.set_start_or_end(self.x_start_lower_bound, self.x_start_upper_bound)
+        x_end = self.set_start_or_end(self.x_end_lower_bound, self.x_end_upper_bound)
+        y_start = self.set_start_or_end(self.y_start_lower_bound, self.y_start_upper_bound)
+        y_end = self.set_start_or_end(self.y_end_lower_bound, self.y_end_upper_bound)
+        return x_start, x_end, y_start, y_end
 
     def update_bounds(self, new_x_min: int, new_y_min: int):
         """
@@ -935,25 +994,23 @@ class mergeWordImageOnBaseImage(Window):
     The merging works by comparing the pixels of the word image with the pixels from the base image and the darker pixel is kept.
     Users should take care when generating and transforming the word image such that relevant features are dark enough to appear on the merged image. 
     """
-    def __init__(self, x_start_lower_bound: int, x_start_upper_bound: int, x_end_lower_bound: int, x_end_upper_bound: int, y_start_lower_bound: int, y_start_upper_bound: int, y_end_lower_bound: int, y_end_upper_bound: int, new_width_random_range_start: float, new_width_random_range_end: float):
+    def __init__(self, x_start_lower_bound: int, x_start_upper_bound: int, x_end_lower_bound: int, x_end_upper_bound: int, y_start_lower_bound: int, y_start_upper_bound: int, y_end_lower_bound: int, y_end_upper_bound: int, new_width_multiplier_start: float, new_width_multiplier_end: float):
         super().__init__(x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound)
-        self.new_width_random_range_start = new_width_random_range_start
-        self.new_width_random_range_end = new_width_random_range_end
+        self.new_width_multiplier_start = new_width_multiplier_start
+        self.new_width_multiplier_end = new_width_multiplier_end
 
     def merge_word_image_and_base_image(self, word_image_as_array: np.ndarray, underline_start_pos_from_word_image: int, base_image: np.ndarray) -> np.ndarray:
         """
         This is main function of the mergeWordImageOnBaseImage. It chooses a place on the window based on the bounds for each position: left, right, top and bottom,
             then resizes the word image to that given space, then it merges the word image with the base image and returns the base image
         """
-        x_start = np.random.randint(self.x_start_lower_bound, self.x_start_upper_bound) # Determine the bounds on the base image within which we'll merge our word image.
-        x_end = np.random.randint(self.x_end_lower_bound, self.x_end_upper_bound)
-        y_start = np.random.randint(self.y_start_lower_bound, self.y_start_upper_bound)
-        y_end = np.random.randint(self.y_end_lower_bound, self.y_end_upper_bound)
+        x_start, x_end, y_start, y_end = self.get_starts_and_ends()
+
         window_width = x_end - x_start
         window_height = y_end - y_start
         word_image_height, word_image_width, _ = word_image_as_array.shape
-        new_height = int((word_image_height/underline_start_pos_from_word_image)*window_height)
-        new_width = round((new_height/word_image_height)*word_image_width*(np.random.uniform(self.new_width_random_range_start, self.new_width_random_range_end)))
+        new_height = round((word_image_height/underline_start_pos_from_word_image)*window_height)
+        new_width = round((new_height/word_image_height)*word_image_width*(np.random.uniform(self.new_width_multiplier_start, self.new_width_multiplier_end)))
 
         if window_width < new_width:
             new_width = window_width
@@ -963,7 +1020,7 @@ class mergeWordImageOnBaseImage(Window):
 
         merge_x_start = x_start
         if new_width < window_width: # If the new width of our word image is smaller than the width of the window on the base image we're to merge on, let the x-position vary from the start of the window so that there is variation in word placement. 
-            # TODO: Make this a parameter that the user can influence. 
+            # TODO: Make this a parameter that the user can influence. Mark 3
             difference = window_width-new_width
             difference_scaled = int(difference/20)
             merge_x_start = x_start + np.clip(int(np.random.chisquare(3)*difference_scaled), 0, difference)
@@ -992,11 +1049,11 @@ class mergeWordImageOnBaseImageInstantiator():
         y_start_higher_range_percentage = config["y_start_higher_range_percentage"]
         y_end_lower_range_percentage = config["y_end_lower_range_percentage"]
         y_end_higher_range_percentage = config["y_end_higher_range_percentage"]
-        new_width_random_range_start = config["new_width_random_range_start"]
-        new_width_random_range_end = config["new_width_random_range_end"]
+        new_width_multiplier_start = config["new_width_multiplier_start"]
+        new_width_multiplier_end = config["new_width_multiplier_end"]
         quadrilateral = Quadrilateral(path_to_quadrilateral)
         x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound = getBoundsForWindowOnBaseImageFromQuadrilateral(quadrilateral, x_start_left_range_percentage, x_start_right_range_percentage, x_end_left_range_percentage, x_end_right_range_percentage, y_start_lower_range_percentage, y_start_higher_range_percentage, y_end_lower_range_percentage, y_end_higher_range_percentage).get_bounds_for_window_on_base_image()
-        return mergeWordImageOnBaseImage(x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound, new_width_random_range_start, new_width_random_range_end)
+        return mergeWordImageOnBaseImage(x_start_lower_bound, x_start_upper_bound, x_end_lower_bound, x_end_upper_bound, y_start_lower_bound, y_start_upper_bound, y_end_lower_bound, y_end_upper_bound, new_width_multiplier_start, new_width_multiplier_end)
 
 class cropMergedImageToViewSize(Window):
     """
@@ -1012,12 +1069,7 @@ class cropMergedImageToViewSize(Window):
         Args:
             image: an np.ndarray of our image.
         """
-        # TODO: make and handle cases where these are equal to zero or are the same.
-        # TODO: Check to see that the lower bound isn't higher than the upper bound. 
-        x_start = np.random.randint(self.x_start_lower_bound, self.x_start_upper_bound)
-        x_end = np.random.randint(self.x_end_lower_bound, self.x_end_upper_bound)
-        y_start = np.random.randint(self.y_start_lower_bound, self.y_start_upper_bound)
-        y_end = np.random.randint(self.y_end_lower_bound, self.y_end_upper_bound)
+        x_start, x_end, y_start, y_end = self.get_starts_and_ends()
         return image[y_start:(y_end+1), x_start:(x_end+1), :]
 
 class cropMergedImageToViewSizeInstantiator():
