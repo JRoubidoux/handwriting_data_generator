@@ -1,2 +1,0 @@
-"/grphome/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/main/RLL_handwriting_data_generator/fonts/a-amaryllis-flower-font/AmaryllisFlower-K7EGe.ttf": 1
-"/grphome/fslg_census/nobackup/archive/common_tools/handwriting_data_generator/branches/main/RLL_handwriting_data_generator/fonts/a-ambyar-sobat-font/AmbyarSobat-GOKEy.ttf": 1

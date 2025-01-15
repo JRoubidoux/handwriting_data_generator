@@ -36,8 +36,8 @@ image_generation:
         y_start_higher_range_percentage: 0.15
         y_end_lower_range_percentage: 0.05
         y_end_higher_range_percentage: 0.05
-        new_width_random_range_start: 1.5
-        new_width_random_range_end: 2.2
+        new_width_multiplier_start: 1.5
+        new_width_multiplier_end: 2.2
         bezier_dash:
           height_range: [45, 45]
           width_range: [100, 300]
@@ -60,8 +60,8 @@ image_generation:
         y_start_higher_range_percentage: 0.05
         y_end_lower_range_percentage: 0.05
         y_end_higher_range_percentage: 0.05
-        new_width_random_range_start: 0.9
-        new_width_random_range_end: 1.1
+        new_width_multiplier_start: 0.9
+        new_width_multiplier_end: 1.1
         bezier_dash:
           height_range: [45, 45]
           width_range: [200, 400]
@@ -84,8 +84,8 @@ image_generation:
         y_start_higher_range_percentage: 0.05
         y_end_lower_range_percentage: 0.05
         y_end_higher_range_percentage: 0.05
-        new_width_random_range_start: 0.9
-        new_width_random_range_end: 1.1
+        new_width_multiplier_start: 0.9
+        new_width_multiplier_end: 1.1
         bezier_dash:
           height_range: [45, 45]
           width_range: [200, 400]

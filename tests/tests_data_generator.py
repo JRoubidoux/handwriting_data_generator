@@ -31,7 +31,7 @@ class DataGeneratorTests(unittest.TestCase):
             assert e.__str__ == "F-String 123", "Failed the instantiation of the CustomError class."
 
     def test_vocabManager_class(self):
-        path_to_vocab = ""
+        path_to_vocab = r""
         vm = dg.vocabManager(path_to_vocab)
         valid_words = set(["apple", "orange", "banana", "pear"])
         word = vm.get_next_text_from_vocab()
@@ -54,12 +54,22 @@ class DataGeneratorTests(unittest.TestCase):
         assert isinstance(fom.font_dictionaries[0][font_size_lower_bound], FreeTypeFont), "The dictionary should map to a freeTypeFont object."
 
     def test_fontObjectManagerGivenCharacters_class(self):
+        # Test this with a vocabulary where at all of the fonts support the given characters.
+        # Test this with a vocabulary where only one of the fonts support the given characters.
+        # Test this with a vocabulary where none of the fonts support all of the characters.
+        # Test get reduced text.
+
         pass
 
     def test_fontLetterPlotDictionaryInstantiator_class(self):
+        # Test a font that renders some characters well.
+        # Test a font that doesn't render characters.
         pass
 
     def test_fontObjectManagerGivenVocabulary_class(self):
+        # Test a font that supports all characters.
+        # Test a font that doesn't support all characters.
+        # Test other functions.
         pass
 
     def test_numberManager_class(self):
