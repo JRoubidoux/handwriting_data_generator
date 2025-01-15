@@ -2,6 +2,9 @@ import numpy as np
 import albumentations as A
 import random
 
+# Current
+# TODO: Create test cases for the transforms, the lighten or darken parts of image transform throws an error. 
+
 # Future things to do
 #TODO: In the lightenOrDarkenPartsOfWord transform, make the logic more robust
 #TODO: Create a transform that allows
@@ -65,6 +68,7 @@ class lightenOrDarkenPartsOfWord(A.ImageOnlyTransform):
         Args:
             image: A np.array of our image.
         """
+        # TODO: Check the data type and the highest and lowest values in the image. Throw errors where appropriate.
         dtype = image.dtype # Track the original datatype of the image so we can convert our image back to that dtype.
         image = image.astype(np.float32) # Convert the image to float to avoid unsigned overflow issues.
         font_color = np.min(image) # The smallest value in the image should represent the font color
@@ -81,6 +85,8 @@ class lightenOrDarkenPartsOfWord(A.ImageOnlyTransform):
 
         number_of_rows = 1 # To lighten or darken along the y-axis, we select a number of rows that each represent a value: lighten, normal or darken. If just one row, then the value is left as normal. 
         number_of_columns = 1 # Ditto for the x-axis
+
+        # TODO: Handle the case where the range is a single value. Throw errors for the case where the lower range is higher than the upper range. 
 
         if horizontal_value <= self.horizontal_gradient_prob: # If horizontal_value is less than the probability the user selected, select a given number of columns based on the range the user inputted.
             number_of_columns = np.random.randint(self.range_of_columns[0], self.range_of_columns[1]+1)

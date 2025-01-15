@@ -3,6 +3,7 @@ from torchvision.transforms import v2
 
 # Current:
 # TODO: make another class for non-merging sythetic data.
+# TODO: fix the current dataset object here to work even if no transforms are given. 
 
 class syntheticGeneratorDataset(Dataset):
     """
